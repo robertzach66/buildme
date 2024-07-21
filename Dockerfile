@@ -1,15 +1,20 @@
 # syntax=docker/dockerfile:1
 FROM golang:1.22-alpine AS base
 WORKDIR /src
-COPY go.mod go.sum ./
-RUN go mod download
-COPY . .
+RUN --mount=type=cache, target=/go/pck/mod/ \
+    --mount=type=bind, source=go.sum, target=go.sum \
+    --mount=type=bind, source=go.mod, target=go.mod \
+    go mod download -x
 
 FROM base AS build-client
-RUN go build -o /bin/client ./cmd/client
+RUN --mount=type=cache, target=/go/pck/mod/ \
+    --mount=type=bind, target=. \
+    go build -o /bin/client ./cmd/client
 
 FROM base AS build-server
-RUN go build -o /bin/server ./cmd/server
+RUN --mount=type=cache, target=/go/pck/mod/ \
+    --mount=type=bind, target=. \
+    go build -o /bin/server ./cmd/server
 
 FROM scratch AS client
 COPY --from=build-client /bin/client /bin/
