@@ -1,20 +1,22 @@
 # syntax=docker/dockerfile:1
-FROM golang:1.22-alpine AS base
+ARG GO_VERSION=1.22
+FROM golang:${GO_VERSION}-alpine AS base
 WORKDIR /src
-RUN --mount=type=cache, target=/go/pck/mod/ \
-    --mount=type=bind, source=go.sum, target=go.sum \
-    --mount=type=bind, source=go.mod, target=go.mod \
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,source=go.sum,target=go.sum \
+    --mount=type=bind,source=go.mod,target=go.mod \
     go mod download -x
 
 FROM base AS build-client
-RUN --mount=type=cache, target=/go/pck/mod/ \
-    --mount=type=bind, target=. \
+RUN --mount=type=cache,target=/go/pkg/mod/ \
+    --mount=type=bind,target=. \
     go build -o /bin/client ./cmd/client
 
 FROM base AS build-server
-RUN --mount=type=cache, target=/go/pck/mod/ \
-    --mount=type=bind, target=. \
-    go build -o /bin/server ./cmd/server
+ARG APP_VERSION="v0.0.0+unknown"
+RUN --mount=type=cache,target=/go/pck/mod/ \
+    --mount=type=bind,target=. \
+    go build -ldflags "-X main.version=$APP_VERSION" -o /bin/server ./cmd/server
 
 FROM scratch AS client
 COPY --from=build-client /bin/client /bin/
