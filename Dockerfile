@@ -25,3 +25,7 @@ ENTRYPOINT [ "/bin/client" ]
 FROM scratch AS server
 COPY --from=build-server /bin/server /bin/
 ENTRYPOINT [ "/bin/server" ]
+
+FROM scratch AS binaries
+COPY --from=build-client /bin/client/ /
+COPY --from=build-server /bin/server/ /
